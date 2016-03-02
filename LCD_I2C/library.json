@@ -1,0 +1,10 @@
+{
+  "name": "LCD_I2C",
+  "keywords": "LCD, liquidcrystal, I2C",
+  "description": "A library for I2C LCD displays",
+  "frameworks": "arduino",
+  "platforms":
+  [
+    "atmelavr"
+  ]
+}
