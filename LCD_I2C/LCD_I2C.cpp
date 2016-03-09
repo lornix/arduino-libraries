@@ -1,6 +1,6 @@
 #include "Arduino.h"
 #include <inttypes.h>
-#include "Wire.h"
+#include <Wire.h>
 #include "LCD_I2C.h"
 
 #if !defined(ARDUINO)
@@ -86,39 +86,43 @@ void LCD_I2C::setPos(uint8_t line, uint8_t col)
     send(LCD_SETDDRAMADDR|(col+offset),0);
 }
 
-void LCD_I2C::noDisplay()
+void LCD_I2C::backlight(uint8_t state)
 {
-    _displaycontrol &= ~LCD_DISPLAYON;
+    if (state) {
+        _backlightval=LCD_BACKLIGHT;
+    } else {
+        _backlightval=LCD_NOBACKLIGHT;
+    }
+    expanderWrite(0);
+}
+
+void LCD_I2C::blink(uint8_t state)
+{
+    if (state) {
+        _displaycontrol |= LCD_BLINKON;
+    } else {
+        _displaycontrol &= ~LCD_BLINKON;
+    }
     send(LCD_DISPLAYCONTROL | _displaycontrol,0);
 }
 
-void LCD_I2C::display()
+void LCD_I2C::cursor(uint8_t state)
 {
-    _displaycontrol |= LCD_DISPLAYON;
+    if (state) {
+        _displaycontrol |= LCD_CURSORON;
+    } else {
+        _displaycontrol &= ~LCD_CURSORON;
+    }
     send(LCD_DISPLAYCONTROL | _displaycontrol,0);
 }
 
-void LCD_I2C::noCursor()
+void LCD_I2C::display(uint8_t state)
 {
-    _displaycontrol &= ~LCD_CURSORON;
-    send(LCD_DISPLAYCONTROL | _displaycontrol,0);
-}
-
-void LCD_I2C::cursor()
-{
-    _displaycontrol |= LCD_CURSORON;
-    send(LCD_DISPLAYCONTROL | _displaycontrol,0);
-}
-
-void LCD_I2C::noBlink()
-{
-    _displaycontrol &= ~LCD_BLINKON;
-    send(LCD_DISPLAYCONTROL | _displaycontrol,0);
-}
-
-void LCD_I2C::blink()
-{
-    _displaycontrol |= LCD_BLINKON;
+    if (state) {
+        _displaycontrol |= LCD_DISPLAYON;
+    } else {
+        _displaycontrol &= ~LCD_DISPLAYON;
+    }
     send(LCD_DISPLAYCONTROL | _displaycontrol,0);
 }
 
@@ -170,18 +174,6 @@ void LCD_I2C::createChar(uint8_t location, uint8_t charmap[])
     }
 }
 
-void LCD_I2C::noBacklight()
-{
-    _backlightval=LCD_NOBACKLIGHT;
-    expanderWrite(0);
-}
-
-void LCD_I2C::backlight()
-{
-    _backlightval=LCD_BACKLIGHT;
-    expanderWrite(0);
-}
-
 /************ low level data pushing commands **********/
 void LCD_I2C::send(uint8_t value, uint8_t mode)
 {
@@ -192,14 +184,21 @@ void LCD_I2C::send(uint8_t value, uint8_t mode)
 }
 
 inline size_t LCD_I2C::write(uint8_t value) {
-	send(value, Rs);
-	return 1;
+    send(value, Rs);
+    return 1;
 }
 
 void LCD_I2C::write4bits(uint8_t value)
 {
     expanderWrite(value);
-    pulseEnable(value);
+    // En high
+    expanderWrite(value | En);
+    // enable pulse must be >450ns
+    delayMicroseconds(1);
+    // En low
+    expanderWrite(value & ~En);
+    // commands need > 37us to settle
+    delayMicroseconds(50);
 }
 void LCD_I2C::expanderWrite(uint8_t _data)
 {
@@ -207,27 +206,12 @@ void LCD_I2C::expanderWrite(uint8_t _data)
     Wire.write((int)(_data) | _backlightval);
     Wire.endTransmission();
 }
-void LCD_I2C::pulseEnable(uint8_t _data)
-{
-    // En high
-    expanderWrite(_data | En);
-    // enable pulse must be >450ns
-    delayMicroseconds(1);
-    // En low
-    expanderWrite(_data & ~En);
-    // commands need > 37us to settle
-    delayMicroseconds(50);
-}
 
 void LCD_I2C::printstr(const char c[])
 {
     const char* p=c;
     while (*p) {
-      write(*p);
-      p++;
+        write(*p);
+        p++;
     }
 }
-
-// unsupported API functions
-void LCD_I2C::draw_horizontal_graph(uint8_t row, uint8_t column, uint8_t len, uint8_t pixel_col_end) { }
-void LCD_I2C::draw_vertical_graph(uint8_t row, uint8_t column, uint8_t len, uint8_t pixel_row_end) { }

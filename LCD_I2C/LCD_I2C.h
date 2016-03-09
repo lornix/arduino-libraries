@@ -1,6 +1,12 @@
 #ifndef LCD_I2C_h
 #define LCD_I2C_h
 
+// This library has been stripped to minimize memory usage.
+// Pretty much only usable with the particular hardware I have
+// 2x16 LCD with I2C 8-bit interface expander backback.
+// 4BIT communication ONLY, no 8 bit mode has been removed.
+// lornix 2016-03-09
+
 #if !defined (ARDUINO)
 #error This library not designed for other-than-arduino use
 #endif
@@ -39,7 +45,6 @@
 #define LCD_MOVELEFT    0x00
 
 // flags for function set
-#define LCD_8BITMODE 0x10
 #define LCD_4BITMODE 0x00
 #define LCD_2LINE    0x08
 #define LCD_1LINE    0x00
@@ -59,12 +64,10 @@ class LCD_I2C : public Print {
      LCD_I2C(uint8_t lcd_Addr,uint8_t lcd_lines, uint8_t lcd_cols);
      void clear();
      void home();
-     void noDisplay();
-     void display();
-     void noBlink();
-     void blink();
-     void noCursor();
-     void cursor();
+     void backlight(uint8_t state=true);
+     void blink(uint8_t state=true);
+     void cursor(uint8_t state=true);
+     void display(uint8_t state=true);
      void scrollDisplayLeft();
      void scrollDisplayRight();
      void printLeft();
@@ -73,8 +76,6 @@ class LCD_I2C : public Print {
      void rightToLeft();
      void shiftIncrement();
      void shiftDecrement();
-     void noBacklight();
-     void backlight();
      void autoscroll();
      void noAutoscroll();
      void createChar(uint8_t, uint8_t[]);
@@ -86,16 +87,10 @@ class LCD_I2C : public Print {
      void load_custom_character(uint8_t char_num, uint8_t *rows);   // alias for createChar()
      void printstr(const char[]);
 
-     ////Unsupported API functions (not implemented in this library)
-     void draw_horizontal_graph(uint8_t row, uint8_t column, uint8_t len,  uint8_t pixel_col_end);
-     void draw_vertical_graph(uint8_t row, uint8_t column, uint8_t len,  uint8_t pixel_col_end);
-
-
  private:
      void send(uint8_t, uint8_t);
      void write4bits(uint8_t);
      void expanderWrite(uint8_t);
-     void pulseEnable(uint8_t);
      uint8_t _Addr;
      uint8_t _displayfunction;
      uint8_t _displaycontrol;
